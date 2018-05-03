@@ -36,6 +36,8 @@ vegdat$Species = tolower(vegdat$Species)
 
 # Convert parts of data frame to vegetation record matrix
 vegdat_mtrx = dcast(vegdat, PlotID ~ Species, value.var = "Cover", fun.aggregate = sum)
+rownames(vegdat_mtrx) = vegdat_mtrx$PlotID
+vegdat_mtrx = vegdat_mtrx[, -1]
 
 # Save data for further usage
 saveRDS(vegdat, file = paste0(path_rdata, "/vegdat.rds"))
