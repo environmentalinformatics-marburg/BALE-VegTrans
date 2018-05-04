@@ -39,6 +39,20 @@ vegdat_mtrx = dcast(vegdat, PlotID ~ Species, value.var = "Cover", fun.aggregate
 rownames(vegdat_mtrx) = vegdat_mtrx$PlotID
 vegdat_mtrx = vegdat_mtrx[, -1]
 
+# Compute presence/absence matrix
+vegdat_mtrx_pres_abs = vegdat_mtrx
+vegdat_mtrx_pres_abs[vegdat_mtrx_pres_abs > 0] = 1
+vegdat_mtrx_pres_abs[vegdat_mtrx_pres_abs == 0] = 0
+rownames(vegdat_mtrx_pres_abs) = rownames(vegdat_mtrx)
+
+for(c in seq(ncol(vegdat_mtrx_pres_abs))){
+  test = any(is.na(vegdat_mtrx_pres_abs[, c]))
+  if(test){
+    vegdat_mtrx_pres_abs[, c][is.na(vegdat_mtrx_pres_abs[, c])] = 0
+  }
+}
+
 # Save data for further usage
 saveRDS(vegdat, file = paste0(path_rdata, "/vegdat.rds"))
 saveRDS(vegdat_mtrx, file = paste0(path_rdata, "/vegdat_mtrx.rds"))
+saveRDS(vegdat_mtrx_pres_abs, file = paste0(path_rdata, "/vegdat_mtrx_pres_abs.rds"))

@@ -6,22 +6,12 @@ source("C:/Users/tnauss/permanent/plygrnd/mekbib_vegtrans/BALE-VegTrans/src/00_s
 #### Read vegetation matrix
 vegdat = readRDS(paste0(path_rdata, "/vegdat.rds"))
 vegdat_mtrx = readRDS(paste0(path_rdata, "/vegdat_mtrx.rds"))
-
-vegdat_mtrx_pres_abs = vegdat_mtrx
-vegdat_mtrx_pres_abs[vegdat_mtrx_pres_abs > 0] = 1
-vegdat_mtrx_pres_abs[vegdat_mtrx_pres_abs == 0] = 0
-rownames(vegdat_mtrx_pres_abs) = rownames(vegdat_mtrx)
-
-for(c in seq(ncol(vegdat_mtrx_pres_abs))){
-  test = any(is.na(vegdat_mtrx_pres_abs[, c]))
-  if(test){
-    vegdat_mtrx_pres_abs[, c][is.na(vegdat_mtrx_pres_abs[, c])] = 0
-  }
-}
+vegdat_mtrx_pres_abs = readRDS(paste0(path_rdata, "/vegdat_mtrx_pres_abs.rds"))
 
   
 #### Compute diversity meassures
-# Compute diversity and merge them with matrix data and meta information
+# Compute diversity per plot and merge them with matrix data and meta 
+# information
 shannon = diversity(vegdat_mtrx, index = "shannon", MARGIN = 1, base = exp(1))
 simpson = diversity(vegdat_mtrx, index = "simpson", MARGIN = 1, base = exp(1))
 specnbr = specnumber(vegdat_mtrx)
@@ -33,7 +23,28 @@ div_df = data.frame(PlotID = rownames(vegdat_mtrx),
                     Evenness = evns)
 
 vegdat_div = merge(vegdat[, c(1,4:8)], div_df, by = "PlotID")
+vegdat_div = vegdat_div[!duplicated(vegdat_div),]
 vegdat_div$Distance = as.factor(vegdat_div$Distance)
+vegdat_div_long = melt(vegdat_div[, c(1:2, 7:10)], id.var = c("PlotID", "Distance"))
+colnames(vegdat_div_long)[3:4] = c("Variable", "Value")
+
+
+# Compute diversity per distance
+vegdat_mtrx_distsum = vegdat_mtrx
+vegdat_mtrx_distsum$agg_id = substr(rownames(vegdat_mtrx), 3, 6)
+vegdat_mtrx_distsum = aggregate(.~agg_id, vegdat_mtrx_distsum, FUN = sum, na.action = na.omit)
+rownames(vegdat_mtrx_distsum) = vegdat_mtrx_distsum$agg_id
+vegdat_mtrx_distsum$agg_id = NULL
+
+shannon = diversity(vegdat_mtrx_distsum, index = "shannon", MARGIN = 1, base = exp(1))
+simpson = diversity(vegdat_mtrx_distsum, index = "simpson", MARGIN = 1, base = exp(1))
+specnbr = specnumber(vegdat_mtrx_distsum)
+evns = simpson/log(apply(vegdat_mtrx_distsum>0,1,sum))
+vegdat_div_distsum = data.frame(Distance = rownames(vegdat_mtrx_distsum),
+                                Shannon = shannon,
+                                Simpson = simpson,
+                                SpecNbr = specnbr,
+                                Evenness = evns)
 
 
 #### Compute turnover/nestnedness
@@ -42,7 +53,7 @@ vegdat_div$Distance = as.factor(vegdat_div$Distance)
 # prior to the nonmetric multidimensional scaling
 nmds = metaMDS(vegdat_mtrx_pres_abs)
 
-bp = beta.pair(vegdat_mtrx_pres_abs[, -1], index.family = "sorensen")
+bp = beta.pair(vegdat_mtrx_pres_abs, index.family = "sorensen")
 bp_nmds = lapply(bp, function(d){metaMDS(d)})
 
 # bp_narm = lapply(bp, function(d){
@@ -59,23 +70,9 @@ bp_nmds = lapply(bp, function(d){metaMDS(d)})
 names(bp_nmds) = paste0(names(bp), ".cms")
 
 
-
-
-#### Some playing...
-ggplot(data = vegdat_div, aes(x = Distance, y = Shannon)) + 
-  geom_boxplot(notch = TRUE) + 
-  theme_bw()
-
-ggplot(data = vegdat_div, aes(x = Distance, y = Evenness)) + 
-  geom_boxplot(notch = TRUE) + 
-  theme_bw()
-
-stressplot(nmds)
-ordiplot(nmds, type="n")
-orditorp(nmds,display="species",col="red",air=0.01)
-orditorp(nmds,display="sites",cex=1.25,air=0.01)
-
-
-stressplot(bp_nmds$beta.sim.cms)
-ordiplot(bp_nmds$beta.sim.cms, type="n")
-orditorp(bp_nmds$beta.sim.cms, display="sites",cex=1.25,air=0.01)
+saveRDS(vegdat_div, file = paste0(path_rdata, "/vegdat_div.rds"))
+saveRDS(vegdat_div_long, file = paste0(path_rdata, "/vegdat_div_long.rds"))
+saveRDS(vegdat_div_distsum, file = paste0(path_rdata, "/vegdat_div_distsum.rds"))
+saveRDS(nmds, file = paste0(path_rdata, "/nmds.rds"))
+saveRDS(bp, file = paste0(path_rdata, "/bp.rds"))
+saveRDS(bp_nmds, file = paste0(path_rdata, "/bp_nmds.rds"))
