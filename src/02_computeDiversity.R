@@ -21,9 +21,7 @@ div_df = data.frame(PlotID = rownames(vegdat_mtrx),
                     Simpson = simpson,
                     SpecNbr = specnbr,
                     Evenness = evns)
-
-vegdat_div = merge(vegdat[, c(1,4:8)], div_df, by = "PlotID")
-vegdat_div = vegdat_div[!duplicated(vegdat_div),]
+vegdat_div = merge(vegdat[!duplicated(vegdat$PlotID), c(1,4:8)], div_df, by = "PlotID")
 vegdat_div$Distance = as.factor(vegdat_div$Distance)
 vegdat_div_long = melt(vegdat_div[, c(1:2, 7:10)], id.var = c("PlotID", "Distance"))
 colnames(vegdat_div_long)[3:4] = c("Variable", "Value")

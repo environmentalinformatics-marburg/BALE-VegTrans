@@ -15,7 +15,33 @@ bp_nmds = readRDS(paste0(path_rdata, "/bp_nmds.rds"))
 
 
 
-#### Some graphics
+#### Linear mixed-effect modelling
+# vegdat_div$Distance = as.numeric(as.character(vegdat_div$Distance))
+# vegdat_div$Settlement = as.factor(vegdat_div$Settlement)
+lmer_shannon = lmer(formula  = Shannon ~ Distance + (1 | PlotID), data = vegdat_div)
+display(lmer_shannon)
+summary(lmer_shannon)
+
+lmer_shannon = lmer(formula  = Shannon ~ Distance + (1 + Distance | Distance), data = vegdat_div)
+display(lmer_shannon)
+summary(lmer_shannon)
+
+
+#### CCA
+
+vegdat_div$Distance = as.numeric(as.character(vegdat_div$Distance))
+vegdat_cca = cca(vegdat_mtrx_pres_abs ~ Distance + Alt, data=vegdat_div, na.action = na.omit)
+
+anova.cca(vegdat_cca)
+# anova.cca(vegdat_cca, by="terms")
+# anova.cca(vegdat_cca, by="axis")
+
+plot(vegdat_cca, display=c("species"))
+plot(vegdat_cca, display=c("sites"))
+plot(vegdat_cca, display=c("species", "sites", "cn"))
+plot(vegdat_cca, display=c("species", "sites", "cn"), type = "text")
+
+#### Some graphics on diversity meassures
 ggplot(data = vegdat_div, aes(x = Distance, y = Shannon)) + 
   geom_boxplot(notch = TRUE) + 
   theme_bw()
@@ -35,14 +61,16 @@ ggplot(data = vegdat_div_distsum, aes(x = Distance, y = Shannon, group=1)) +
   theme_bw()
 
 
-# NMDS plots
+
+#### Some graphics on NMDS
 stressplot(nmds)
 ordiplot(nmds, type="n", main = "metaMDS Analysis")
 orditorp(nmds,display="species",col="red",air=0.01)
 orditorp(nmds,display="sites",cex=1.25,air=0.01)
 
 
-# BP plots
+
+#### Some graphics on BP
 groups = substr(rownames(vegdat_mtrx_pres_abs), 3, 6)
 
 colors = as.factor(groups)

@@ -11,8 +11,10 @@ path_temp = paste0(path_data, "temp/")
 
 
 # Set libraries ----------------------------------------------------------------
+library(arm)
 library(betapart)
 library(ggplot2)
+library(lme4)
 library(readxl)
 library(reshape2)
 library(vegan)
